@@ -1,0 +1,107 @@
+# main.py
+# import sqlite3
+from flask import Flask, render_template, redirect, url_for, request, abort
+app = Flask(__name__)
+def get_db_connection():
+    conn = sqlite3.connect('instance/database.db')
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def get_note(note_id):
+    conn = get_db_connection()
+    note = conn.execute( 'SELECT * FROM notes WHERE id = ?' , (note_id,)).fetchone()
+    conn.close()
+    if note is None : 
+        abort( 404 ) 
+        return note
+
+def read_and_validate ( form ): 
+    """Return (values, error). error is None when the form is valid."""
+    values = { 
+        'topic' : form.get( 'topic' , '' ).strip(),
+        'description' : form.get( 'description' , '' ).strip(),
+        'issue_details' : form.get( 'issue_details' , '' ).strip(),
+        'status' : form.get( 'status' , 'open' ),
+        'attempts' : form.get( 'attempts' , '' ).strip(),
+        'resolution' : form.get( 'resolution' , '' ).strip(),
+        'lessons_learned' : form.get( 'lessons_learned' , '' ).strip(), 
+    } 
+    error = None
+    if not values[ 'topic' ] or not values[ 'description' ] or not values[ 'issue_details' ]:
+        error = 'Topic, description, and issue details are required.'
+    elif values[ 'status' ] not in ( 'open' , 'resolved' ):
+        error = 'Status must be Open or Resolved.'
+    elif values[ 'status' ] == 'resolved' and not (values[ 'resolution' ] and values[ 'lessons_learned' ]):
+        error = 'A resolved note needs both "How it was resolved" and "What I learned".'
+    return values, error
+
+@app.route('/')
+def index (): 
+    conn = get_db_connection()
+    notes = conn.execute( 'SELECT * FROM notes ORDER BY created DESC' ).fetchall()
+    conn.close()
+    return render_template( 'index.html' , notes=notes)
+
+@app.route( '/<int:note_id>' )
+def note ( note_id ):
+    item = get_note(note_id)
+    return render_template( 'note.html' , item=item)
+
+@app.route( '/create' , methods=( 'GET' , 'POST' ) )
+def create (): 
+    values, error = {}, None
+    if request.method == 'POST' :
+        values, error = read_and_validate(request.form)
+        if error is None :
+            conn = get_db_connection()
+            conn.execute( '''INSERT INTO notes (topic, description, issue_details, status, attempts, resolution, lessons_learned) VALUES (?, ?, ?, ?, ?, ?, ?)''' ,
+                         (values[ 'topic' ],
+                         values[ 'description' ],
+                         values[ 'issue_details' ],
+                         values[ 'status' ],
+                         values[ 'attempts' ],
+                         values[ 'resolution' ],
+                         values[ 'lessons_learned' ])) 
+            conn.commit()
+            conn.close()
+            return redirect(url_for( 'index' ))
+            return render_template( 'create.html' , values=values, error=error)
+        
+        @app.route( '/<int:note_id>/edit' , methods=( 'GET' , 'POST' ) )
+        def edit ( note_id ):
+            item = get_note(note_id) values, error = item, None # GET: pre-fill from the saved note
+            if request.method == 'POST' :
+                values, error = read_and_validate(request.form)
+                if error is None :
+                    conn = get_db_connection()
+                    conn.execute(
+                        '''UPDATE notes SET topic = ?,
+                        description = ?,
+                        issue_details = ?,
+                        status = ?,
+                        attempts = ?,
+                        resolution = ?,
+                        lessons_learned = ?,
+                        updated = CURRENT_TIMESTAMP WHERE id = ?''' ,             
+                        (values[ 'topic' ],
+                        values[ 'description' ],
+                        values[ 'issue_details' ],
+                        values[ 'status' ],
+                        values[ 'attempts' ],
+                        values[ 'resolution' ],
+                        values[ 'lessons_learned' ],
+                        note_id))
+                    conn.commit()
+                    conn.close()
+                    return redirect(url_for( 'index' )) 
+                return render_template( 'edit.html' , item=item, values=values, error=error) 
+                
+        @app.route( '/<int:note_id>/delete' , methods=( 'POST' , ) )
+        def delete ( note_id ):
+            get_note(note_id) # 404 if it doesn't exist
+            conn = get_db_connection()
+            conn.execute( 'DELETE FROM notes WHERE id = ?' , (note_id,))
+            conn.commit()
+            conn.close()
+            return redirect(url_for( 'index' ))
+

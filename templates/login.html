@@ -1,28 +1,14 @@
-<html>
-  <head>
-    <title>Login page</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="static/bootstrap.min.css" rel="stylesheet" media="screen">
-    <style>
-      body, h1, input, button {
-        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1>Please login</h1>
-      <br>
-      <form action="" method="post">
-        <input type="text" placeholder="Username" name="username" value="{{
-          request.form.username }}">
-         <input type="password" placeholder="Password" name="password" value="{{
-          request.form.password }}">
-        <input class="btn btn-default" type="submit" value="Login">
-      </form>
-      {% if error %}
-        <div class="alert alert-danger" role="alert"><strong>Error:</strong> {{ error }}</div>
-      {% endif %}
-    </div>
-  </body>
-</html>
+{% extends 'base.html' %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<h1>Please log in</h1>
+{% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+<form method="post">
+    <label for="username">Username</label>
+    <input id="username" name="username" autocomplete="username" required
+           value="{{ request.form.get('username', '') }}">
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <button type="submit">Log in</button>
+</form>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}My Coding Notes{% endblock %}
+{% block content %}
+<h1>My Coding Notes</h1>
+{% for item in notes %}
+    <article class="note-summary">
+        <h2><a href="{{ url_for('note', note_id=item['id']) }}">{{ item['topic'] }}</a></h2>
+        <span class="status-{{ item['status'] }}">{{ item['status']|upper }}</span>
+        <p>{{ item['description'] }}</p>
+    </article>
+{% else %}
+    <p>No notes yet. Create one to get started.</p>
+{% endfor %}
+{% endblock %}

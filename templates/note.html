@@ -1,0 +1,20 @@
+{% extends 'base.html' %}{% block title %}{{ item['topic'] }}{% endblock %}{% block content %}
+<h1>{{ item['topic'] }}</h1>
+<p class="status-{{ item['status'] }}">{{ item['status']|upper }}</p>
+<h2>Description</h2>
+<pre class="code-block">{{ item['description'] }}</pre>
+<h2>What's happening / what should be happening</h2>
+<pre class="code-block">{{ item['issue_details'] }}</pre>
+{% if item['attempts'] %}
+    <h2>What I've tried</h2>
+    <pre class="code-block">{{ item['attempts'] }}
+</pre>
+{% endif %}
+{% if item['status'] == 'resolved' %}
+    <h2>How it was resolved</h2>
+    <pre class="code-block">{{ item['resolution'] }}</pre>
+    <h2>What I learned</h2>
+    <pre class="code-block">{{ item['lessons_learned'] }}</pre>
+{% endif %}
+<p><a href="{{ url_for('edit', note_id=item['id']) }}">Edit note</a></p>
+{% endblock %}
