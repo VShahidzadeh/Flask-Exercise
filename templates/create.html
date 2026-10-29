@@ -1,0 +1,30 @@
+{% extends 'base.html' %}{% block title %}New Note{% endblock %}{% block content %}
+<h1>New Note</h1>
+{% if error %}
+<p class="error" role="alert">{{ error }}</p>{% endif %}
+<form method="post">
+<label for="topic">Topic</label>
+<input id="topic" name="topic" required value="{{ values['topic']|default('') }}">
+<label for="description">Description</label>
+<textarea id="description" name="description" required>{{ values['description']|default('') }}
+</textarea>
+<label for="issue_details">What's happening / what should happen</label>
+<textarea id="issue_details" name="issue_details" required>{{ values['issue_details']|default('') }}
+</textarea>
+<label for="status"> Status</label>
+<select id="status" name="status">
+    <option value="open"
+    {% if values['status'] == 'open' %}selected{% endif %}>Open</option>
+    <option value="resolved"
+    {% if values['status'] == 'resolved' %}selected{% endif %}>Resolved</option>
+</select>
+<label for="attempts"> What I've tried (keep this when resolved)</label>
+<textarea id="attempts" name="attempts">{{ values['attempts']|default('') or '' }}</textarea>
+<label for="resolution">How it was resolved (required if resolved)</label>
+<textarea id="resolution" name="resolution">{{ values['resolution']|default('') or '' }}</textarea>
+<label for="lessons_learned">What I learned (required if resolved)</label>
+<textarea id="lessons_learned" name="lessons_learned">{{ values['lessons_learned']|default('') or '' }}
+</textarea>
+<button type="submit">Save</button>
+</form>
+{% endblock %}

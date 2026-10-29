@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Dev Notes{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav aria-label="Main navigation">
+        {% if session.get('user') %}
+            <a href="{{ url_for('index') }}">My Coding Notes</a>
+            <a href="{{ url_for('create') }}">New Note</a>
+            <span class="who">Logged in as {{ session['user'] }}</span>
+            <a href="{{ url_for('logout') }}">Log out</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Log in</a>
+        {% endif %}
+    </nav>
+    {% for message in get_flashed_messages() %}
+        <p class="flash" role="status">{{ message }}</p>
+    {% endfor %}
+    <main>{% block content %}{% endblock %}</main>
+</body>
+</html>
