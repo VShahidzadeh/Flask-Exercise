@@ -3,7 +3,7 @@ import os
 import sqlite3
 from functools import wraps
 from flask import (Flask, render_template, redirect, url_for, request, abort,
-                   session, flash)
+                   session, flash, g)
 
 app = Flask(__name__)
 
@@ -61,15 +61,22 @@ def logout():
 
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    if 'db' not in g:
+        g.db = sqlite3.connect(DB_PATH)
+        g.db.row_factory = sqlite3.Row
+    return g.db
+
+
+@app.teardown_appcontext
+def close_db_connection(exception=None):
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
 
 
 def get_note(note_id):
     conn = get_db_connection()
     note = conn.execute('SELECT * FROM notes WHERE id = ?', (note_id,)).fetchone()
-    conn.close()
     if note is None:
         abort(404)
     return note
@@ -99,10 +106,28 @@ def read_and_validate(form):
 @app.route('/')
 @login_required
 def index():
+    query = request.args.get('q', '').strip()
     conn = get_db_connection()
-    notes = conn.execute('SELECT * FROM notes ORDER BY created DESC').fetchall()
-    conn.close()
-    return render_template('index.html', notes=notes)
+    status = request.args.get('status', 'all')
+    if status not in ('all', 'open', 'resolved'):
+        status = 'all'
+
+    conditions, params = [], []
+    if query:
+        like_query = f"%{query}%"
+        conditions.append('(topic LIKE ? OR description LIKE ? OR issue_details LIKE ?)')
+        params += [like_query, like_query, like_query]
+    if status != 'all':
+        conditions.append('status = ?')
+        params.append(status)
+
+    sql = 'SELECT * FROM notes'
+    if conditions:
+        sql += ' WHERE ' + ' AND '.join(conditions)
+    sql += " ORDER BY CASE WHEN status = 'open' THEN 0 ELSE 1 END, created DESC"
+
+    notes = conn.execute(sql, params).fetchall()
+    return render_template('index.html', notes=notes, query=query, status=status)
 
 
 @app.route('/<int:note_id>')
@@ -128,7 +153,6 @@ def create():
                  values['status'], values['attempts'], values['resolution'],
                  values['lessons_learned']))
             conn.commit()
-            conn.close()
             return redirect(url_for('index'))
     return render_template('create.html', values=values, error=error)
 
@@ -151,7 +175,6 @@ def edit(note_id):
                  values['status'], values['attempts'], values['resolution'],
                  values['lessons_learned'], note_id))
             conn.commit()
-            conn.close()
             return redirect(url_for('index'))
     return render_template('edit.html', item=item, values=values, error=error)
 
@@ -163,5 +186,4 @@ def delete(note_id):
     conn = get_db_connection()
     conn.execute('DELETE FROM notes WHERE id = ?', (note_id,))
     conn.commit()
-    conn.close()
     return redirect(url_for('index'))

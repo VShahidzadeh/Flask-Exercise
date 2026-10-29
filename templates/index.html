@@ -2,6 +2,21 @@
 {% block title %}My Coding Notes{% endblock %}
 {% block content %}
 <h1>My Coding Notes</h1>
+<form method="get" action="{{ url_for('index') }}">
+    <input type="text" name="q" placeholder="Search notes..." value="{{ query or '' }}">
+    <input type="hidden" name="status" value="{{ status }}">
+    <button type="submit">Search</button>
+    {% if query %}
+        <a href="{{ url_for('index', status=status) }}">Clear</a>
+    {% endif %}
+</form>
+<p>Show:
+    {% for option in ['all', 'open', 'resolved'] %}
+        {% if option == status %}<strong>{{ option|capitalize }}</strong>
+        {% else %}<a href="{{ url_for('index', q=query or None, status=option) }}">{{ option|capitalize }}</a>{% endif %}
+        {% if not loop.last %} / {% endif %}
+    {% endfor %}
+</p>
 {% for item in notes %}
     <article class="note-summary">
         <h2><a href="{{ url_for('note', note_id=item['id']) }}">{{ item['topic'] }}</a></h2>
